@@ -8,16 +8,22 @@
 
 ## 安装
 
+### 从 GitHub 拉取
+
+```bash
+git clone https://github.com/zhang294237751/memory-system.git
+```
+
 ### Claude Code
 
 ```bash
-python path/to/memory-system/install.py
+python memory-system/install.py
 ```
 
 ### OpenAI Codex
 
 ```bash
-python path/to/memory-system/codex/install.py
+python memory-system/codex/install.py
 ```
 
 > Codex 需要启用 `features.codex_hooks = true`
