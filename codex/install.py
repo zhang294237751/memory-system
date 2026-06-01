@@ -133,6 +133,19 @@ def install(force=False, dry_run=False):
             json.dump(existing, f, indent=2, ensure_ascii=False)
     print(f"  [OK] .codex/hooks.json")
 
+    # 3.5 启用 Codex hooks 功能
+    config_path = base / ".codex" / "config.toml"
+    config_content = None
+    if config_path.exists():
+        config_content = config_path.read_text(encoding="utf-8")
+    if config_content and "codex_hooks" in config_content:
+        print(f"  [SKIP] features.codex_hooks 已启用")
+    else:
+        if not dry_run:
+            with open(config_path, "a", encoding="utf-8") as f:
+                f.write("\n[features]\ncodex_hooks = true\n")
+        print(f"  [OK] features.codex_hooks = true 已写入 config.toml")
+
     # 4. item memory.md 模板
     memory_path = base / "item memory.md"
     if not memory_path.exists():
@@ -143,8 +156,7 @@ def install(force=False, dry_run=False):
         print(f"  [SKIP] item memory.md 已存在，保留")
 
     print()
-    print("  安装完成！")
-    print()
+    print("  安装完成！下次会话开始记忆系统自动生效。")
     print("  工作流程：")
     print("    1. 会话开始 -> SessionStart hook 注入记忆上下文 + 处理指令")
     print("    2. 每次提问 -> UserPromptSubmit hook 注入记忆摘要")
