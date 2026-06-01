@@ -1,0 +1,37 @@
+{
+  "name": "memory-system",
+  "version": "1.0.0",
+  "description": "会话记忆管理系统 — 自动从对话中提取、分类、归档项目记忆，跨会话积累知识",
+  "author": "user",
+  "license": "MIT",
+  "keywords": ["memory", "knowledge-base", "session", "context"],
+  "platforms": ["claude-code", "codex"],
+  "skills": [
+    {
+      "name": "memory-skill",
+      "path": "skills/memory-skill/SKILL.md",
+      "description": "处理记忆提取、分类归档、备注清理和删除管理"
+    }
+  ],
+  "hooks": [
+    {
+      "name": "save_session_abstract",
+      "path": "hooks/save_session_abstract.py",
+      "event": "Stop",
+      "description": "会话结束时保存对话摘要"
+    },
+    {
+      "name": "inject_memory",
+      "path": "hooks/inject_memory.py",
+      "event": "UserPromptSubmit",
+      "description": "每次 prompt 注入记忆上下文"
+    }
+  ],
+  "config": {
+    "python": "python3",
+    "hooks": {
+      "Stop": "python3 .claude/hooks/save_session_abstract.py",
+      "UserPromptSubmit": "python3 .claude/hooks/inject_memory.py"
+    }
+  }
+}
