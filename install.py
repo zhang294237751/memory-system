@@ -43,7 +43,7 @@ def install(force=False, dry_run=False):
     ]
     for d in dirs:
         d.mkdir(parents=True, exist_ok=True)
-        print(f"  ✓ {d.relative_to(base)}")
+        print(f"  [OK] {d.relative_to(base)}")
 
     # 2. 复制文件
     copies = [
@@ -54,10 +54,10 @@ def install(force=False, dry_run=False):
     print()
     for src, dst in copies:
         if dst.exists() and not force:
-            print(f"  ○ {dst.name} 已存在，跳过")
+            print(f"  [SKIP] {dst.name} 已存在，跳过")
             continue
         shutil.copy2(src, dst)
-        print(f"  ✓ {dst.name}")
+        print(f"  [OK] {dst.name}")
 
     # 3. 配置 settings.local.json
     settings_path = base / ".claude" / "settings.local.json"
@@ -75,9 +75,9 @@ def install(force=False, dry_run=False):
         if not any(h["hooks"][0]["command"] == cmd for h in existing if h.get("hooks")):
             existing.append(entry)
             hooks[event] = existing
-            print(f"  ✓ hooks.{event} 已配置")
+            print(f"  [OK] hooks.{event} 已配置")
         else:
-            print(f"  ○ hooks.{event} 已存在")
+            print(f"  [SKIP] hooks.{event} 已存在")
 
     settings["hooks"] = hooks
 
@@ -93,7 +93,7 @@ def install(force=False, dry_run=False):
     if not dry_run:
         with open(settings_path, "w", encoding="utf-8") as f:
             json.dump(settings, f, indent=2, ensure_ascii=False)
-    print(f"  ✓ settings.local.json")
+    print(f"  [OK] settings.local.json")
 
     # 4. CLAUDE.md
     claude_path = base / "CLAUDE.md"
@@ -101,14 +101,14 @@ def install(force=False, dry_run=False):
     if not claude_path.exists():
         if not dry_run:
             claude_path.write_text(CLAUDE_MD_APPEND.strip() + "\n", encoding="utf-8")
-        print(f"  ✓ CLAUDE.md 已创建")
+        print(f"  [OK] CLAUDE.md 已创建")
     elif marker not in claude_path.read_text(encoding="utf-8"):
         if not dry_run:
             with open(claude_path, "a", encoding="utf-8") as f:
                 f.write("\n" + CLAUDE_MD_APPEND.strip() + "\n")
-        print(f"  ✓ CLAUDE.md 已追加记忆指令")
+        print(f"  [OK] CLAUDE.md 已追加记忆指令")
     else:
-        print(f"  ○ CLAUDE.md 已有记忆指令")
+        print(f"  [SKIP] CLAUDE.md 已有记忆指令")
 
     # 5. item memory.md 模板
     memory_path = base / "item memory.md"
@@ -116,9 +116,9 @@ def install(force=False, dry_run=False):
         template = PLUGIN_DIR.parent / "item memory.md"
         if template.exists():
             shutil.copy2(template, memory_path)
-        print(f"  ✓ item memory.md 已创建")
+        print(f"  [OK] item memory.md 已创建")
     else:
-        print(f"  ○ item memory.md 已存在，保留")
+        print(f"  [SKIP] item memory.md 已存在，保留")
 
     # 6. 全局命令
     global_tools = Path.home() / ".claude" / "tools"
@@ -128,7 +128,7 @@ def install(force=False, dry_run=False):
         dst = global_tools / script
         if src.exists():
             shutil.copy2(src, dst)
-    print(f"  ✓ 全局工具已更新")
+    print(f"  [OK] 全局工具已更新")
 
     print()
     print("  安装完成！")

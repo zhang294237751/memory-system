@@ -80,7 +80,10 @@ ITEM_MEMORY_TEMPLATE = """# 项目记忆文档
 
 def install(force=False, dry_run=False):
     base = Path.cwd()
+    python_path = sys.executable
+
     print(f"\n  Memory System 安装器 (Codex)")
+    print(f"  Python: {python_path}")
     print(f"  目标: {base}")
     print()
 
@@ -89,21 +92,20 @@ def install(force=False, dry_run=False):
     dirs = [hooks_dir]
     for d in dirs:
         d.mkdir(parents=True, exist_ok=True)
-        print(f"  ✓ {d.relative_to(base)}")
+        print(f"  [OK] {d.relative_to(base)}")
 
     # 2. 复制 hook 脚本
     for src, name in HOOK_SCRIPTS:
         dst = hooks_dir / name
         if dst.exists() and not force:
-            print(f"  ○ {name} 已存在，跳过")
+            print(f"  [SKIP] {name} 已存在，跳过")
             continue
         shutil.copy2(src, dst)
-        print(f"  ✓ {name}")
+        print(f"  [OK] {name}")
 
-    # 3. 配置 hooks.json
+    # 3. 配置 hooks.json（使用当前 Python 路径确保 hook 可执行）
     hooks_json_path = base / ".codex" / "hooks.json"
     if hooks_json_path.exists() and not force:
-        # 合并已有配置
         with open(hooks_json_path, "r", encoding="utf-8") as f:
             existing = json.load(f)
     else:
@@ -112,35 +114,41 @@ def install(force=False, dry_run=False):
     with open(HOOKS_JSON_SRC, "r", encoding="utf-8") as f:
         codex_hooks = json.load(f)
 
-    # 合并 hooks（保留现有的，添加新的）
+    # 替换 hook 命令中的 python 为绝对路径
+    for event in codex_hooks.get("hooks", {}):
+        for entry in codex_hooks["hooks"][event]:
+            for h in entry.get("hooks", []):
+                cmd = h.get("command", "")
+                if cmd.startswith("python "):
+                    h["command"] = f"{python_path} {cmd[7:]}"
+
+    # 合并 hooks（memory-system 的事件始终用最新模板覆盖）
     existing_hooks = existing.get("hooks", {})
     for event in ["SessionStart", "UserPromptSubmit", "Stop"]:
-        if event not in existing_hooks:
-            existing_hooks[event] = codex_hooks.get(event, [])
-
+        existing_hooks[event] = codex_hooks.get(event, [])
     existing["hooks"] = existing_hooks
 
     if not dry_run:
         with open(hooks_json_path, "w", encoding="utf-8") as f:
             json.dump(existing, f, indent=2, ensure_ascii=False)
-    print(f"  ✓ .codex/hooks.json")
+    print(f"  [OK] .codex/hooks.json")
 
     # 4. item memory.md 模板
     memory_path = base / "item memory.md"
     if not memory_path.exists():
         if not dry_run:
             memory_path.write_text(ITEM_MEMORY_TEMPLATE, encoding="utf-8")
-        print(f"  ✓ item memory.md 已创建")
+        print(f"  [OK] item memory.md 已创建")
     else:
-        print(f"  ○ item memory.md 已存在，保留")
+        print(f"  [SKIP] item memory.md 已存在，保留")
 
     print()
     print("  安装完成！")
     print()
     print("  工作流程：")
-    print("    1. 会话开始 → SessionStart hook 注入记忆上下文 + 处理指令")
-    print("    2. 每次提问 → UserPromptSubmit hook 注入记忆摘要")
-    print("    3. 会话结束 → Stop hook 保存对话摘要到 .codex/session_abstract.md")
+    print("    1. 会话开始 -> SessionStart hook 注入记忆上下文 + 处理指令")
+    print("    2. 每次提问 -> UserPromptSubmit hook 注入记忆摘要")
+    print("    3. 会话结束 -> Stop hook 保存对话摘要到 .codex/session_abstract.md")
     print()
     print("  提示：在 Codex 中启用 hooks 功能需要确认 features.codex_hooks = true")
 
