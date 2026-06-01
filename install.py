@@ -32,7 +32,9 @@ CLAUDE_MD_APPEND = """
 
 def install(force=False, dry_run=False):
     base = Path.cwd()
+    python_path = sys.executable
     print(f"\n  Memory System 安装器")
+    print(f"  Python: {python_path}")
     print(f"  目标: {base}")
     print()
 
@@ -59,20 +61,22 @@ def install(force=False, dry_run=False):
         shutil.copy2(src, dst)
         print(f"  [OK] {dst.name}")
 
-    # 3. 配置 settings.local.json
+    # 3. 配置 settings.local.json（使用绝对路径）
     settings_path = base / ".claude" / "settings.local.json"
     settings = {}
     if settings_path.exists():
         with open(settings_path, "r", encoding="utf-8") as f:
             settings = json.load(f)
 
-    # 添加 hooks
+    save_hook = f"{python_path} {base / '.claude' / 'hooks' / 'save_session_abstract.py'}"
+    inject_hook = f"{python_path} {base / '.claude' / 'hooks' / 'inject_memory.py'}"
+
     hooks = settings.get("hooks", {})
-    for event, cmd in [("Stop", "python3 .claude/hooks/save_session_abstract.py"),
-                        ("UserPromptSubmit", "python3 .claude/hooks/inject_memory.py")]:
+    for event, cmd in [("Stop", save_hook),
+                        ("UserPromptSubmit", inject_hook)]:
         entry = {"matcher": "", "hooks": [{"type": "command", "command": cmd}]}
         existing = hooks.get(event, [])
-        if not any(h["hooks"][0]["command"] == cmd for h in existing if h.get("hooks")):
+        if not any(cmd in h["hooks"][0]["command"] for h in existing if h.get("hooks")):
             existing.append(entry)
             hooks[event] = existing
             print(f"  [OK] hooks.{event} 已配置")
@@ -83,8 +87,8 @@ def install(force=False, dry_run=False):
 
     # 添加权限
     perms = settings.get("permissions", {}).get("allow", [])
-    for p in ["Bash(python3 .claude/hooks/save_session_abstract.py)",
-              "Bash(python3 .claude/hooks/inject_memory.py)"]:
+    for p in [f"Bash({save_hook})",
+              f"Bash({inject_hook})"]:
         if p not in perms:
             perms.append(p)
     if perms != settings.get("permissions", {}).get("allow", []):
