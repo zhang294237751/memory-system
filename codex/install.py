@@ -125,7 +125,7 @@ def install(force=False, dry_run=False):
     # 合并 hooks（memory-system 的事件始终用最新模板覆盖）
     existing_hooks = existing.get("hooks", {})
     for event in ["SessionStart", "UserPromptSubmit", "Stop"]:
-        existing_hooks[event] = codex_hooks.get(event, [])
+        existing_hooks[event] = codex_hooks.get("hooks", {}).get(event, [])
     existing["hooks"] = existing_hooks
 
     if not dry_run:
